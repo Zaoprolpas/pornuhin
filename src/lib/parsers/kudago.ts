@@ -85,6 +85,13 @@ function extractPrice(priceString: string | null): {
   return { min: Math.min(...parsed), max: Math.max(...parsed) };
 }
 
+function isPermanentDate(startUnix: number, endUnix: number | null): boolean {
+  const startYear = new Date(startUnix * 1000).getFullYear();
+  const endYear = endUnix ? new Date(endUnix * 1000).getFullYear() : null;
+  // KudaGo uses years like 0001 and 9998 for permanent events
+  return startYear < 1900 || (endYear !== null && endYear > 9000);
+}
+
 function parseEvent(rawEvent: KudaGoEventResponse, city: string): Event | null {
   try {
     // Validate required fields
@@ -94,8 +101,15 @@ function parseEvent(rawEvent: KudaGoEventResponse, city: string): Event | null {
     }
 
     const firstDate = rawEvent.dates[0];
-    const startDate = new Date(firstDate.start * 1000).toISOString();
-    const endDate = firstDate.end ? new Date(firstDate.end * 1000).toISOString() : null;
+    const permanent = isPermanentDate(firstDate.start, firstDate.end);
+
+    // For permanent events, use today as start_date so they sort reasonably
+    const startDate = permanent
+      ? new Date().toISOString()
+      : new Date(firstDate.start * 1000).toISOString();
+    const endDate = permanent
+      ? null
+      : firstDate.end ? new Date(firstDate.end * 1000).toISOString() : null;
 
     const priceData = extractPrice(rawEvent.price);
     const category = mapCategory(rawEvent.categories || []);
@@ -112,6 +126,7 @@ function parseEvent(rawEvent: KudaGoEventResponse, city: string): Event | null {
       address: rawEvent.place?.address || null,
       start_date: startDate,
       end_date: endDate,
+      is_permanent: permanent,
       url: rawEvent.site_url || null,
       image_url: rawEvent.images?.[0]?.image || null,
       price_min: priceData.min,

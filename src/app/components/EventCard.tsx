@@ -84,6 +84,15 @@ export default function EventCard({ event }: { event: Event }) {
           </span>
         </div>
 
+        {/* Permanent badge */}
+        {event.is_permanent && (
+          <div className="absolute bottom-2 left-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold backdrop-blur-sm bg-yellow-900/80 text-yellow-200 border border-yellow-700/50">
+              Permanent
+            </span>
+          </div>
+        )}
+
         {/* Category badge overlay */}
         {event.category && (
           <div className="absolute top-2 right-2">
@@ -112,9 +121,15 @@ export default function EventCard({ event }: { event: Event }) {
           {/* Date */}
           <p className="text-xs text-gray-400">
             <span className="inline-block w-3.5 text-center mr-0.5">📅</span>
-            {formatDate(event.start_date)}
-            {event.end_date && event.end_date !== event.start_date && (
-              <span className="text-gray-600"> → {formatDate(event.end_date)}</span>
+            {event.is_permanent ? (
+              <span className="text-yellow-400/80">Year-round</span>
+            ) : (
+              <>
+                {formatDate(event.start_date)}
+                {event.end_date && event.end_date !== event.start_date && (
+                  <span className="text-gray-600"> → {formatDate(event.end_date)}</span>
+                )}
+              </>
             )}
           </p>
 

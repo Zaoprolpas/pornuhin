@@ -10,6 +10,7 @@ export interface Event {
   address: string | null;
   start_date: string; // ISO 8601
   end_date: string | null;
+  is_permanent: boolean;
   url: string | null;
   image_url: string | null;
   price_min: number | null;

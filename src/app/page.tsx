@@ -52,7 +52,8 @@ async function fetchEvents(opts: FetchEventsOptions): Promise<FetchEventsResult>
   let query = supabase
     .from('events')
     .select('*', { count: 'exact' })
-    .order('fetched_at', { ascending: false })
+    .order('is_permanent', { ascending: true })
+    .order('start_date', { ascending: true })
     .range(from, to);
 
   if (source) query = query.eq('source', source);

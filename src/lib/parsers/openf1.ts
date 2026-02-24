@@ -225,6 +225,7 @@ export async function fetchF1Events(): Promise<Event[]> {
         address: null,
         start_date: startDate,
         end_date: endDate,
+        is_permanent: false,
         url: `https://www.formula1.com/en/racing/${year}`,
         image_url: null,
         price_min: null,

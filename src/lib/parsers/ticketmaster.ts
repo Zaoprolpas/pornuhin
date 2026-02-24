@@ -63,6 +63,7 @@ function parseEvent(raw: any, countryName: string): Event | null {
       address: venue?.address?.line1 || null,
       start_date: raw.dates.start.dateTime,
       end_date: raw.dates.end?.dateTime || null,
+      is_permanent: false,
       url: raw.url || null,
       image_url: image?.url || null,
       price_min: priceRanges?.min || null,
