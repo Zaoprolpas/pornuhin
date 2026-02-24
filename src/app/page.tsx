@@ -4,6 +4,8 @@ import { Event } from '@/lib/types';
 import EventFilters from './components/EventFilters';
 import Pagination from './components/Pagination';
 
+export const dynamic = 'force-dynamic';
+
 const PAGE_SIZE = 50;
 
 // ─── helpers ────────────────────────────────────────────────────────────────

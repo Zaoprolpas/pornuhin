@@ -1,14 +1,36 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+function getUrl() {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
+}
+function getAnonKey() {
+  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+}
+function getServiceKey() {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+}
 
-// Client for frontend (read-only, uses anon key)
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Lazy clients — created on first use, not at import time (avoids build-time crash)
+let _supabase: SupabaseClient | null = null;
+let _supabaseAdmin: SupabaseClient | null = null;
 
-// Client for API routes (read-write, uses service role key)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+export function getSupabase() {
+  if (!_supabase) _supabase = createClient(getUrl(), getAnonKey());
+  return _supabase;
+}
+
+export function getSupabaseAdmin() {
+  if (!_supabaseAdmin) _supabaseAdmin = createClient(getUrl(), getServiceKey());
+  return _supabaseAdmin;
+}
+
+// Backwards-compatible exports
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_, prop) { return (getSupabase() as any)[prop]; }
+});
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_, prop) { return (getSupabaseAdmin() as any)[prop]; }
+});
 
 // Upsert events into the database (uses service role)
 export async function upsertEvents(events: import('./types').Event[]): Promise<{ inserted: number; errors: number }> {
