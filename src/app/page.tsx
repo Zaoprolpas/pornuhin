@@ -6,6 +6,7 @@ import EventCard from './components/EventCard';
 import Pagination from './components/Pagination';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 const PAGE_SIZE = 24; // divisible by 1, 2, 3, 4 columns
 

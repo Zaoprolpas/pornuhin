@@ -5,6 +5,7 @@ import FlightCard from '../components/FlightCard';
 import FlightFilters from '../components/FlightFilters';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 // ─── data fetching ───────────────────────────────────────────────────────────
 
