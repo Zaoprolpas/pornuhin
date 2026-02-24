@@ -92,6 +92,21 @@ function isPermanentDate(startUnix: number, endUnix: number | null): boolean {
   return startYear < 1900 || (endYear !== null && endYear > 9000);
 }
 
+function findUpcomingDates(
+  dates: Array<{ start: number; end: number | null }>,
+  maxCount = 5
+): Array<{ start: string; end: string | null }> {
+  const now = Date.now();
+  return dates
+    .filter(d => d.start * 1000 >= now)
+    .sort((a, b) => a.start - b.start)
+    .slice(0, maxCount)
+    .map(d => ({
+      start: new Date(d.start * 1000).toISOString(),
+      end: d.end ? new Date(d.end * 1000).toISOString() : null,
+    }));
+}
+
 function parseEvent(rawEvent: KudaGoEventResponse, city: string): Event | null {
   try {
     // Validate required fields
@@ -103,7 +118,17 @@ function parseEvent(rawEvent: KudaGoEventResponse, city: string): Event | null {
     const firstDate = rawEvent.dates[0];
     const permanent = isPermanentDate(firstDate.start, firstDate.end);
 
-    // For permanent events, use today as start_date so they sort reasonably
+    // Compute upcoming dates from the full dates array
+    const upcoming = permanent ? [] : findUpcomingDates(rawEvent.dates);
+
+    // Skip non-permanent events with no future dates
+    if (!permanent && upcoming.length === 0) {
+      return null;
+    }
+
+    const nextOccurrence = upcoming.length > 0 ? upcoming[0].start : null;
+
+    // Keep start_date for backward compat (use first date from API)
     const startDate = permanent
       ? new Date().toISOString()
       : new Date(firstDate.start * 1000).toISOString();
@@ -134,6 +159,8 @@ function parseEvent(rawEvent: KudaGoEventResponse, city: string): Event | null {
       currency: 'RUB',
       tags: rawEvent.tags || [],
       raw_data: rawEvent as unknown as Record<string, unknown>,
+      next_occurrence: nextOccurrence,
+      upcoming_dates: upcoming.length > 0 ? upcoming : null,
     };
 
     return event;

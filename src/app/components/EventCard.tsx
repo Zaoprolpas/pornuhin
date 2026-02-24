@@ -125,9 +125,9 @@ export default function EventCard({ event }: { event: Event }) {
               <span className="text-yellow-400/80">Year-round</span>
             ) : (
               <>
-                {formatDate(event.start_date)}
-                {event.end_date && event.end_date !== event.start_date && (
-                  <span className="text-gray-600"> → {formatDate(event.end_date)}</span>
+                {formatDate(event.next_occurrence ?? event.start_date)}
+                {event.upcoming_dates && event.upcoming_dates.length > 1 && (
+                  <span className="text-blue-400/70 ml-1">+{event.upcoming_dates.length - 1} more</span>
                 )}
               </>
             )}

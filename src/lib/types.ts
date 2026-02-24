@@ -18,6 +18,8 @@ export interface Event {
   currency: string;
   tags: string[];
   raw_data: Record<string, unknown>;
+  next_occurrence: string | null;
+  upcoming_dates: Array<{ start: string; end: string | null }> | null;
 }
 
 export interface FetchResult {

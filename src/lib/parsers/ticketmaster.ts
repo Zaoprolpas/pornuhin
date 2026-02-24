@@ -71,6 +71,8 @@ function parseEvent(raw: any, countryName: string): Event | null {
       currency: priceRanges?.currency || 'EUR',
       tags: buildTags(raw),
       raw_data: raw as unknown as Record<string, unknown>,
+      next_occurrence: raw.dates.start.dateTime,
+      upcoming_dates: null,
     };
   } catch (error) {
     console.warn(`Error parsing TM event ${raw?.id}:`, error instanceof Error ? error.message : String(error));

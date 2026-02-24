@@ -236,6 +236,8 @@ export async function fetchF1Events(): Promise<Event[]> {
           meeting,
           sessions: meetingSessions,
         },
+        next_occurrence: startDate,
+        upcoming_dates: null,
       };
 
       events.push(event);

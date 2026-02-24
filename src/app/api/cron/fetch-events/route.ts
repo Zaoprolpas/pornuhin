@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchKudaGoEvents } from '@/lib/parsers/kudago';
 import { fetchF1Events } from '@/lib/parsers/openf1';
 import { fetchTicketmasterEvents } from '@/lib/parsers/ticketmaster';
-import { upsertEvents } from '@/lib/supabase';
+import { upsertEvents, supabaseAdmin } from '@/lib/supabase';
 import { FetchResult, CronResponse } from '@/lib/types';
 
 export const maxDuration = 60; // Allow up to 60s for Vercel
@@ -75,6 +75,18 @@ export async function GET(request: NextRequest) {
       errors: 1,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  // Clean up stale non-permanent events (next_occurrence > 7 days ago)
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { count: deletedCount } = await supabaseAdmin
+    .from('events')
+    .delete({ count: 'exact' })
+    .eq('is_permanent', false)
+    .lt('next_occurrence', sevenDaysAgo);
+
+  if (deletedCount && deletedCount > 0) {
+    console.log(`Cleaned up ${deletedCount} stale events`);
   }
 
   const response: CronResponse = {

@@ -49,18 +49,21 @@ async function fetchEvents(opts: FetchEventsOptions): Promise<FetchEventsResult>
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
+  const today = new Date().toISOString().slice(0, 10);
+
   let query = supabase
     .from('events')
     .select('*', { count: 'exact' })
+    .or(`is_permanent.eq.true,next_occurrence.gte.${today}`)
     .order('is_permanent', { ascending: true })
-    .order('start_date', { ascending: true })
+    .order('next_occurrence', { ascending: true, nullsFirst: false })
     .range(from, to);
 
   if (source) query = query.eq('source', source);
   if (category) query = query.eq('category', category);
   if (city) query = query.ilike('city', `%${city}%`);
-  if (dateFrom) query = query.gte('start_date', dateFrom);
-  if (dateTo) query = query.lte('start_date', `${dateTo}T23:59:59Z`);
+  if (dateFrom) query = query.gte('next_occurrence', dateFrom);
+  if (dateTo) query = query.lte('next_occurrence', `${dateTo}T23:59:59Z`);
 
   const { data, count, error } = await query;
 
@@ -70,9 +73,9 @@ async function fetchEvents(opts: FetchEventsOptions): Promise<FetchEventsResult>
   }
 
   const [kudaGoResult, ticketmasterResult, openF1Result, lastUpdateResult] = await Promise.all([
-    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'kudago'),
-    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'ticketmaster'),
-    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'openf1'),
+    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'kudago').or(`is_permanent.eq.true,next_occurrence.gte.${today}`),
+    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'ticketmaster').or(`is_permanent.eq.true,next_occurrence.gte.${today}`),
+    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'openf1').or(`is_permanent.eq.true,next_occurrence.gte.${today}`),
     supabase
       .from('events')
       .select('fetched_at')
