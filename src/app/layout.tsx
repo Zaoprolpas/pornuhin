@@ -51,7 +51,7 @@ export default function RootLayout({
           </header>
           <main className="flex-1">{children}</main>
           <footer className="border-t border-gray-800 py-4 text-center text-xs text-gray-600">
-            Travel Data Hub &mdash; KudaGo &middot; Ticketmaster &middot; OpenF1 &middot; Aviasales
+            Travel Data Hub &mdash; KudaGo &middot; Ticketmaster &middot; OpenF1 &middot; Aviasales &middot; hh.ru
           </footer>
         </div>
       </body>

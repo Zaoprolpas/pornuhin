@@ -90,3 +90,32 @@ export async function upsertFlights(flights: import('./types').Flight[]): Promis
 
   return { inserted, errors };
 }
+
+// Upsert vacancies into the database (uses service role)
+export async function upsertVacancies(vacancies: import('./types').Vacancy[]): Promise<{ inserted: number; errors: number }> {
+  let inserted = 0;
+  let errors = 0;
+
+  const chunkSize = 100;
+  for (let i = 0; i < vacancies.length; i += chunkSize) {
+    const chunk = vacancies.slice(i, i + chunkSize);
+    const { error } = await supabaseAdmin
+      .from('vacancies')
+      .upsert(
+        chunk.map(v => ({
+          ...v,
+          fetched_at: new Date().toISOString(),
+        })),
+        { onConflict: 'hh_id' }
+      );
+
+    if (error) {
+      console.error(`Vacancy upsert error for chunk ${i / chunkSize}:`, error.message);
+      errors += chunk.length;
+    } else {
+      inserted += chunk.length;
+    }
+  }
+
+  return { inserted, errors };
+}

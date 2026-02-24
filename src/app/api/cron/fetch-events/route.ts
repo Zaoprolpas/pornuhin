@@ -3,7 +3,8 @@ import { fetchKudaGoEvents } from '@/lib/parsers/kudago';
 import { fetchF1Events } from '@/lib/parsers/openf1';
 import { fetchTicketmasterEvents } from '@/lib/parsers/ticketmaster';
 import { fetchAviasalesFlights } from '@/lib/parsers/aviasales';
-import { upsertEvents, upsertFlights, supabaseAdmin } from '@/lib/supabase';
+import { fetchHeadHunterVacancies } from '@/lib/parsers/headhunter';
+import { upsertEvents, upsertFlights, upsertVacancies, supabaseAdmin } from '@/lib/supabase';
 import { FetchResult, CronResponse } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -97,6 +98,37 @@ export async function GET(request: NextRequest) {
       errors: 1,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  // Fetch hh.ru vacancies
+  try {
+    const vacancies = await fetchHeadHunterVacancies();
+    const { inserted, errors } = await upsertVacancies(vacancies);
+    results.push({
+      source: 'headhunter',
+      fetched: inserted,
+      errors,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('HeadHunter fetch failed:', error);
+    results.push({
+      source: 'headhunter',
+      fetched: 0,
+      errors: 1,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Clean up stale vacancies (older than 3 days)
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const { count: staleVacancies } = await supabaseAdmin
+    .from('vacancies')
+    .delete({ count: 'exact' })
+    .lt('fetched_at', threeDaysAgo);
+
+  if (staleVacancies && staleVacancies > 0) {
+    console.log(`Cleaned up ${staleVacancies} stale vacancies`);
   }
 
   // Clean up stale flights (older than 2 days)

@@ -36,6 +36,23 @@ export interface Flight {
   link: string | null;      // affiliate deeplink
 }
 
+export interface Vacancy {
+  hh_id: string;
+  title: string;
+  company: string;
+  salary_from: number | null;
+  salary_to: number | null;
+  currency: string;
+  schedule: string | null;      // shift, flexible, remote, fullDay
+  employment: string | null;    // part, project, probation, full
+  experience: string | null;    // noExperience, between1And3, etc.
+  city: string;
+  metro_station: string | null;
+  url: string;                  // hh.ru link
+  accept_temporary: boolean;
+  published_at: string;         // ISO 8601
+}
+
 export interface FetchResult {
   source: string;
   fetched: number;
