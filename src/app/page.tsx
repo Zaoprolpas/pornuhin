@@ -30,8 +30,9 @@ interface FetchEventsOptions {
   source?: string;
   category?: string;
   city?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  country?: string;
+  when?: string;
+  free?: boolean;
   page: number;
 }
 
@@ -44,17 +45,59 @@ interface FetchEventsResult {
   lastUpdate: string | null;
 }
 
+function computeDateRange(when: string): { start: string; end: string } | null {
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+
+  if (when === 'weekend') {
+    const day = now.getDay(); // 0=Sun, 6=Sat
+    const sat = new Date(now);
+    const sun = new Date(now);
+    if (day === 0) {
+      // Sunday — weekend is today
+      sat.setDate(now.getDate() - 1);
+    } else if (day === 6) {
+      // Saturday — weekend is today + tomorrow
+      sun.setDate(now.getDate() + 1);
+    } else {
+      sat.setDate(now.getDate() + (6 - day));
+      sun.setDate(sat.getDate() + 1);
+    }
+    return { start: sat.toISOString().slice(0, 10), end: sun.toISOString().slice(0, 10) };
+  }
+
+  if (when === 'week') {
+    const end = new Date(now);
+    end.setDate(now.getDate() + 7);
+    return { start: todayStr, end: end.toISOString().slice(0, 10) };
+  }
+
+  if (when === 'month') {
+    const end = new Date(now);
+    end.setDate(now.getDate() + 30);
+    return { start: todayStr, end: end.toISOString().slice(0, 10) };
+  }
+
+  return null;
+}
+
 async function fetchEvents(opts: FetchEventsOptions): Promise<FetchEventsResult> {
-  const { source, category, city, dateFrom, dateTo, page } = opts;
+  const { source, category, city, country, when, free, page } = opts;
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
   const today = new Date().toISOString().slice(0, 10);
+  const dateRange = when ? computeDateRange(when) : null;
+
+  // Base filter: hide past events, keep permanent
+  const baseOr = dateRange
+    ? `is_permanent.eq.true,and(next_occurrence.gte.${dateRange.start},next_occurrence.lte.${dateRange.end}T23:59:59Z)`
+    : `is_permanent.eq.true,next_occurrence.gte.${today}`;
 
   let query = supabase
     .from('events')
     .select('*', { count: 'exact' })
-    .or(`is_permanent.eq.true,next_occurrence.gte.${today}`)
+    .or(baseOr)
     .order('is_permanent', { ascending: true })
     .order('next_occurrence', { ascending: true, nullsFirst: false })
     .range(from, to);
@@ -62,8 +105,8 @@ async function fetchEvents(opts: FetchEventsOptions): Promise<FetchEventsResult>
   if (source) query = query.eq('source', source);
   if (category) query = query.eq('category', category);
   if (city) query = query.ilike('city', `%${city}%`);
-  if (dateFrom) query = query.gte('next_occurrence', dateFrom);
-  if (dateTo) query = query.lte('next_occurrence', `${dateTo}T23:59:59Z`);
+  if (country) query = query.eq('country', country);
+  if (free) query = query.or('price_min.is.null,price_min.eq.0');
 
   const { data, count, error } = await query;
 
@@ -72,10 +115,12 @@ async function fetchEvents(opts: FetchEventsOptions): Promise<FetchEventsResult>
     return { events: [], totalCount: 0, kudaGoCount: 0, ticketmasterCount: 0, openF1Count: 0, lastUpdate: null };
   }
 
+  const baseFutureFilter = `is_permanent.eq.true,next_occurrence.gte.${today}`;
+
   const [kudaGoResult, ticketmasterResult, openF1Result, lastUpdateResult] = await Promise.all([
-    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'kudago').or(`is_permanent.eq.true,next_occurrence.gte.${today}`),
-    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'ticketmaster').or(`is_permanent.eq.true,next_occurrence.gte.${today}`),
-    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'openf1').or(`is_permanent.eq.true,next_occurrence.gte.${today}`),
+    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'kudago').or(baseFutureFilter),
+    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'ticketmaster').or(baseFutureFilter),
+    supabase.from('events').select('*', { count: 'exact', head: true }).eq('source', 'openf1').or(baseFutureFilter),
     supabase
       .from('events')
       .select('fetched_at')
@@ -101,8 +146,9 @@ interface PageProps {
     source?: string;
     category?: string;
     city?: string;
-    from?: string;
-    to?: string;
+    country?: string;
+    when?: string;
+    free?: string;
     page?: string;
   };
 }
@@ -111,16 +157,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const source = searchParams.source ?? '';
   const category = searchParams.category ?? '';
   const city = searchParams.city ?? '';
-  const dateFrom = searchParams.from ?? '';
-  const dateTo = searchParams.to ?? '';
+  const country = searchParams.country ?? '';
+  const when = searchParams.when ?? '';
+  const free = searchParams.free ?? '';
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10));
 
   const { events, totalCount, kudaGoCount, ticketmasterCount, openF1Count, lastUpdate } = await fetchEvents({
     source: source || undefined,
     category: category || undefined,
     city: city || undefined,
-    dateFrom: dateFrom || undefined,
-    dateTo: dateTo || undefined,
+    country: country || undefined,
+    when: when || undefined,
+    free: free === 'true',
     page,
   });
 
@@ -163,20 +211,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       </div>
 
       {/* Filters */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 sm:p-5">
-        <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">
-          Filters
-        </h2>
-        <Suspense>
-          <EventFilters
-            currentSource={source}
-            currentCategory={category}
-            currentCity={city}
-            currentDateFrom={dateFrom}
-            currentDateTo={dateTo}
-          />
-        </Suspense>
-      </div>
+      <Suspense>
+        <EventFilters
+          currentSource={source}
+          currentCategory={category}
+          currentCity={city}
+          currentWhen={when}
+          currentFree={free}
+          currentCountry={country}
+        />
+      </Suspense>
 
       {/* Results header */}
       <div className="flex items-center justify-between">
