@@ -18,6 +18,7 @@ const CATEGORIES = [
 const SOURCES = [
   { value: '', label: 'All Sources' },
   { value: 'kudago', label: 'KudaGo' },
+  { value: 'ticketmaster', label: 'Ticketmaster' },
   { value: 'openf1', label: 'OpenF1' },
 ];
 
@@ -70,9 +71,9 @@ export default function EventFilters({
     <div
       className={`transition-opacity duration-150 ${isPending ? 'opacity-60 pointer-events-none' : ''}`}
     >
-      <div className="flex flex-wrap gap-3 items-end">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
         {/* Source filter */}
-        <div className="flex flex-col gap-1.5 min-w-[140px]">
+        <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
             Source
           </label>
@@ -90,7 +91,7 @@ export default function EventFilters({
         </div>
 
         {/* Category filter */}
-        <div className="flex flex-col gap-1.5 min-w-[160px]">
+        <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
             Category
           </label>
@@ -108,7 +109,7 @@ export default function EventFilters({
         </div>
 
         {/* City search */}
-        <div className="flex flex-col gap-1.5 min-w-[180px]">
+        <div className="flex flex-col gap-1.5 col-span-2 sm:col-span-1">
           <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">
             City
           </label>
