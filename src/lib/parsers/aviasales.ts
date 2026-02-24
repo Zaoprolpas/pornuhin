@@ -133,8 +133,8 @@ export async function fetchAviasalesFlights(): Promise<Flight[]> {
   for (const dest of DESTINATIONS) {
     const flights = await fetchDestinationFlights(dest, token);
     allFlights.push(...flights);
-    // Respect rate limits: ~60 req/min → 1 sec between requests
-    await new Promise((r) => setTimeout(r, 1100));
+    // Rate limit: 60 req/min, we make 10 requests → 300ms is safe
+    await new Promise((r) => setTimeout(r, 300));
   }
 
   // Sort by price, cap at 50
