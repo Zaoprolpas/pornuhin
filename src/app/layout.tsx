@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -13,6 +14,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="bg-gray-950">
+      <head>
+        <Script
+          src="https://emrldtp.cc/NTAxOTM5.js?t=501939"
+          strategy="afterInteractive"
+        />
+      </head>
       <body className="bg-gray-950 text-gray-100 min-h-screen antialiased">
         <div className="min-h-screen flex flex-col">
           <header className="border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-10">
