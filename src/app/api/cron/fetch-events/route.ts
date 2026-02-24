@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchKudaGoEvents } from '@/lib/parsers/kudago';
 import { fetchF1Events } from '@/lib/parsers/openf1';
+import { fetchTicketmasterEvents } from '@/lib/parsers/ticketmaster';
 import { upsertEvents } from '@/lib/supabase';
 import { FetchResult, CronResponse } from '@/lib/types';
 
@@ -30,6 +31,26 @@ export async function GET(request: NextRequest) {
     console.error('KudaGo fetch failed:', error);
     results.push({
       source: 'kudago',
+      fetched: 0,
+      errors: 1,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Fetch Ticketmaster events (Europe)
+  try {
+    const tmEvents = await fetchTicketmasterEvents();
+    const { inserted, errors } = await upsertEvents(tmEvents);
+    results.push({
+      source: 'ticketmaster',
+      fetched: inserted,
+      errors,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Ticketmaster fetch failed:', error);
+    results.push({
+      source: 'ticketmaster',
       fetched: 0,
       errors: 1,
       timestamp: new Date().toISOString(),
