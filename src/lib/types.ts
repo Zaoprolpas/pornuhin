@@ -22,6 +22,20 @@ export interface Event {
   upcoming_dates: Array<{ start: string; end: string | null }> | null;
 }
 
+export interface Flight {
+  origin: string;           // IATA code: MOW
+  destination: string;      // IATA code: IST
+  destination_city: string;
+  destination_country: string;
+  price: number;            // in RUB
+  airline: string | null;
+  departure_date: string;   // YYYY-MM-DD
+  return_date: string | null;
+  trip_duration: number | null; // days
+  is_direct: boolean;
+  link: string | null;      // affiliate deeplink
+}
+
 export interface FetchResult {
   source: string;
   fetched: number;

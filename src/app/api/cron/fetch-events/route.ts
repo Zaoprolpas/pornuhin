@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { fetchKudaGoEvents } from '@/lib/parsers/kudago';
 import { fetchF1Events } from '@/lib/parsers/openf1';
 import { fetchTicketmasterEvents } from '@/lib/parsers/ticketmaster';
-import { upsertEvents, supabaseAdmin } from '@/lib/supabase';
+import { fetchAviasalesFlights } from '@/lib/parsers/aviasales';
+import { upsertEvents, upsertFlights, supabaseAdmin } from '@/lib/supabase';
 import { FetchResult, CronResponse } from '@/lib/types';
 
 export const maxDuration = 60; // Allow up to 60s for Vercel
@@ -75,6 +76,37 @@ export async function GET(request: NextRequest) {
       errors: 1,
       timestamp: new Date().toISOString(),
     });
+  }
+
+  // Fetch Aviasales flights
+  try {
+    const flights = await fetchAviasalesFlights();
+    const { inserted, errors } = await upsertFlights(flights);
+    results.push({
+      source: 'aviasales',
+      fetched: inserted,
+      errors,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Aviasales fetch failed:', error);
+    results.push({
+      source: 'aviasales',
+      fetched: 0,
+      errors: 1,
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  // Clean up stale flights (older than 2 days)
+  const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+  const { count: staleFlights } = await supabaseAdmin
+    .from('flights')
+    .delete({ count: 'exact' })
+    .lt('fetched_at', twoDaysAgo);
+
+  if (staleFlights && staleFlights > 0) {
+    console.log(`Cleaned up ${staleFlights} stale flights`);
   }
 
   // Clean up stale non-permanent events (next_occurrence > 7 days ago)

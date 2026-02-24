@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import NavTabs from './components/NavTabs';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -45,14 +46,12 @@ export default function RootLayout({
                 </span>
               </div>
               <div className="h-4 w-px bg-gray-700 mx-1" />
-              <span className="text-xs text-gray-500 font-medium uppercase tracking-wider">
-                Events Dashboard
-              </span>
+              <NavTabs />
             </div>
           </header>
           <main className="flex-1">{children}</main>
           <footer className="border-t border-gray-800 py-4 text-center text-xs text-gray-600">
-            Travel Data Hub &mdash; KudaGo &amp; OpenF1
+            Travel Data Hub &mdash; KudaGo &middot; Ticketmaster &middot; OpenF1 &middot; Aviasales
           </footer>
         </div>
       </body>

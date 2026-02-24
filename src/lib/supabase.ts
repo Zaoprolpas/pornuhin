@@ -61,3 +61,32 @@ export async function upsertEvents(events: import('./types').Event[]): Promise<{
 
   return { inserted, errors };
 }
+
+// Upsert flights into the database (uses service role)
+export async function upsertFlights(flights: import('./types').Flight[]): Promise<{ inserted: number; errors: number }> {
+  let inserted = 0;
+  let errors = 0;
+
+  const chunkSize = 50;
+  for (let i = 0; i < flights.length; i += chunkSize) {
+    const chunk = flights.slice(i, i + chunkSize);
+    const { error } = await supabaseAdmin
+      .from('flights')
+      .upsert(
+        chunk.map(f => ({
+          ...f,
+          fetched_at: new Date().toISOString(),
+        })),
+        { onConflict: 'origin,destination,departure_date' }
+      );
+
+    if (error) {
+      console.error(`Flight upsert error for chunk ${i / chunkSize}:`, error.message);
+      errors += chunk.length;
+    } else {
+      inserted += chunk.length;
+    }
+  }
+
+  return { inserted, errors };
+}
