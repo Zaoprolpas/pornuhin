@@ -6,6 +6,7 @@ import { fetchAviasalesFlights } from '@/lib/parsers/aviasales';
 import { upsertEvents, upsertFlights, supabaseAdmin } from '@/lib/supabase';
 import { FetchResult, CronResponse } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow up to 60s for Vercel
 
 export async function GET(request: NextRequest) {
